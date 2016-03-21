@@ -67,6 +67,10 @@ Create a new system username to run homecloudhub under:
 
     sudo useradd --system homecloudhub
 
+**VERY IMPORTANT** Make sure the new user has read/write access to configuration file!
+
+        sudo chown homecloudhub:homecloudhub /var/node/homecloudhub.local/config/homecloudhub.json 
+
 Create the /etc/default/homecloudhub file with this content:
 
     # Defaults / Configuration options for homecloudhub
