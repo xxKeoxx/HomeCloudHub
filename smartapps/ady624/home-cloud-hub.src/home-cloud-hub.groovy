@@ -566,11 +566,11 @@ def initialize() {
         
         /* subscribe to mode changes to allow sync with AT&T Digital Life */
         subscribe(location, modeChangeHandler)
-        if (state.hch.useLocalServer) {
-        	//listen to LAN incoming messages
-        	subscribe(location, null, lanEventHandler, [filterEvents:false])
-        }
    }
+	if (state.hch.useLocalServer) {
+		//listen to LAN incoming messages
+		subscribe(location, null, lanEventHandler, [filterEvents:false])
+	}
 }
 
 
@@ -896,10 +896,10 @@ private processSecurity(data) {
         if (config.enabled && ((name == module) || !module)) {
         	switch (name) {
             	case "digitallife":
-                	doATTLogin(false, false)
+                	doATTLogin(false, !module)
                     break
             	case "myq":
-                	doMyQLogin(false, false)
+                	doMyQLogin(false, !module)
                     break
             }
 	        config.age = (config.connected ? (now() - config.connected) / 1000 : null)
