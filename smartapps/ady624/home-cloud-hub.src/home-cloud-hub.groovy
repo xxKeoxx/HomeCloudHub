@@ -531,6 +531,7 @@ def initialize() {
         createAccessToken()         
 	}
     
+    state.installed = true    
     //get the installing hch state
     state.hch = state.ihch
 
@@ -541,10 +542,7 @@ def initialize() {
 	if (state.hch.useLocalServer) {
     	//initialize the local server
 		sendLocalServerCommand state.hch.localServerIp, "init", [
-        	server: [
-            	ip: location.hubs[0].localIP,
-                port: location.hubs[0].localSrvPortTCP
-            ],
+        	server: getHubLanEndpoint(),
             modules: state.hch.security
         ]
     } else {
@@ -680,11 +678,8 @@ def lanEventHandler(evt) {
         switch (parsedEvent.data.event) {
         	case "init":
                 sendLocalServerCommand state.hch.localServerIp, "init", [
-                            server: [
-                                ip: location.hubs[0].localIP,
-                                port: location.hubs[0].localSrvPortTCP
-                            ],
-                            modules: processSecurity(parsedEvent.data.data)
+                            server: getHubLanEndpoint(),
+                            modules: processSecurity([module: parsedEvent.data.data])
                         ]
 				break
         	case "event":
@@ -707,7 +702,20 @@ private sendLocalServerCommand(ip, command, payload) {
 }
 
 
-
+private getHubLanEndpoint() {
+	def server = [:]
+	location.hubs.each {
+	    //look for enabled modules
+        def ip = it?.localIP
+        def port = it?.localSrvPortTCP
+        if (ip && port) {
+        	server.ip = ip
+            server.port = port
+            return server
+        }
+    }
+    return server
+}
 
 
 
@@ -866,7 +874,6 @@ private processSecurity(data) {
 	if (!data) {
     	data = params
     }
-	
 	def module = data?.module
     if (module) {
 		log.info "Received request for security tokens for module ${module}"
