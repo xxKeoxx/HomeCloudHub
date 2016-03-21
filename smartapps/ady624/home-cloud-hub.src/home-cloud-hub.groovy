@@ -709,6 +709,7 @@ private getHubLanEndpoint() {
         def ip = it?.localIP
         def port = it?.localSrvPortTCP
         if (ip && port) {
+        	log.trace "Found local endpoint at ${ip}:${port}"
         	server.ip = ip
             server.port = port
             return server
@@ -874,6 +875,7 @@ private processSecurity(data) {
 	if (!data) {
     	data = params
     }
+    
 	def module = data?.module
     if (module) {
 		log.info "Received request for security tokens for module ${module}"
