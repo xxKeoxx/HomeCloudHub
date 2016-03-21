@@ -37,7 +37,14 @@ On your linux machine, create a folder /var/node (if it doesn't exist yet). Down
   to
   
     module.paths.push('<your node modules path goes here>');
-  
+
+Test the application:
+
+        node /var/node/homecloudhub.local/homecloudhub.js
+
+
+#Making the app a bash executable (optional)
+
 Create the file /usr/bin/homecloudhub with this content:
 
     #!/usr/bin/env node
@@ -55,9 +62,18 @@ Give it execute rights:
 
     sudo chmod 755 /usr/bin/homecloudhub
 
-Run the server:
+#Testing your server
 
-    homecloudhub
+**VERY IMPORTANT**: If you have a firewall installed, make sure you allow inbound connections to port 42457.
+
+To run the server, run either
+
+        node /var/node/homecloudhub.local/homecloudhub.js
+
+or, alternatively, if you made an executable at the optional step above:
+
+        homecloudhub
+
 
 With homecloudhub running, go to your SmartThings app and go to Marketplace. Scroll down to My Apps and click on the HomeCloudHub app. Select the local server method and it should automatically detect your server. If it doesn't, you can enter the IP manually, but it should detect it. Click next and enter your AT&T Digital Life credentials. These will be stored into the SmartApp settings collection, if security is a concern. Click Done to finish installing the application. At this point, within a few seconds, your Things should be automatically populated based on the Device Handlers you elected to install.
 
