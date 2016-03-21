@@ -29,6 +29,10 @@ private getMyQAppId() {
 	return 'JVM/G9Nwih5BwKgNCjLxiFUQxQijAebyyg8QUHr7JOrP+tuPb8iHfRHKwTmDzHOu'
 }
 
+private getLocalServerURN() {
+	return "urn:schemas-upnp-org:device:HomeCloudHubLocalServer:624"
+}
+
 preferences {
 	page(name: "prefWelcome", title: "Welcome to Home Cloud Hub")
 	page(name: "prefHCH", title: "Connect to Home Cloud Hub")
@@ -48,7 +52,7 @@ preferences {
 /***********************************************************************/
 def prefWelcome() {
 	state.ihch = [security: [:]]    
-    dynamicPage(name: "prefWelcome", title: "Welcome to Home Cloud Hub", uninstall: !!state.installed) {
+    dynamicPage(name: "prefWelcome", title: "Welcome to Home Cloud Hub", uninstall: state.installed) {
         section("Connection Type") {
             paragraph "Welcome to Home Cloud Hub. Please select a server connection method to start"
         }
@@ -56,7 +60,7 @@ def prefWelcome() {
             href(name: "href",
                  title: "Use the Home Cloud Hub service",
                  required: false,
-                 params: [hchLocal: false],
+                 params: [next: true, hchLocal: false],
                  page: "prefHCH",
                  description: "Select this if you have an account with www.homecloudhub.com",
                  state: !state.ihch.useLocalServer ? "complete" : null)
@@ -65,7 +69,7 @@ def prefWelcome() {
             href(name: "href",
                  title: "Use a local Home Cloud Hub server you installed",
                  required: false,
-                 params: [hchLocal: true],
+                 params: [next: true, hchLocal: true],
                  page: "prefHCH",
                  description: "Select this if you have already installed a local server in your network",
                  state: state.ihch.useLocalServer ? "complete" : null)
@@ -74,11 +78,39 @@ def prefWelcome() {
 }
 
 def prefHCH(params) {
-	state.ihch.useLocalServer = params.hchLocal
+	if (params.next) {
+		state.ihch.useLocalServer = params.hchLocal
+    }
     return dynamicPage(name: "prefHCH", title: "Connect to Home Cloud Hub", nextPage: "prefModulesPrepare") {
     	if (state.ihch.useLocalServer) {
-        	section("Connection Type") {
-	            input("hchServerIP", "text", title: "Enter the IP of your local server", required: true, defaultValue: "")
+            atomicState.hchLocalServerIp = null
+            searchForLocalServer()
+            def cnt = 50
+            def hchLocalServerIp = null
+            while (cnt--) {
+            	pause(200)
+                hchLocalServerIp = atomicState.hchLocalServerIp
+                if (hchLocalServerIp) {
+                	state.ihch.localServerIp = hchLocalServerIp
+                	break
+                }
+            }
+            section("Automatic configuration") {
+				if (hchLocalServerIp) {
+					href(name: "href",
+                         title: "Use local server ${hchLocalServerIp}",
+                         required: false,
+                         params: [next: true, hchLocalServerIp: hchLocalServerIp],
+                         page: "prefModulesPrepare",
+                         description: "Select this to use this detected local server",
+                         state: "complete")
+	            } else {
+                	paragraph "Could not identify any local servers"
+                }
+            }
+            
+        	section("Manual Configuration") {
+	            input("hchLocalServerIp", "text", title: "Enter the IP of your local server", required: true, defaultValue: "")
 	        }
         } else {
             section(title: "", hidden: true) {
@@ -99,58 +131,64 @@ def prefHCH(params) {
     }
 }
 
-def prefModulesPrepare() {
-    //prefill states for the modules
-    doATTLogin(true, true)
-    doMyQLogin(true, true)
-    doIFTTTLogin(true, true)
-	return prefModules()
-}
-
-def prefModules() {
+def prefModulesPrepare(params) {
+	if (params.hchLocalServerIp) {
+    	state.ihch.localServerIp = params.hchLocalServerIp
+    } else {
+        state.ihch.localServerIp = settings.hchLocalServerIp
+    }
+    
     if (doHCHLogin()) {
-        return dynamicPage(name: "prefModules", title: "Add modules to Home Cloud Hub", install: state.ihch.useATT || state.ihch.useMyQ || state.ihch.useIFTTT) {
-            section() {
-                paragraph "Select and configure any of the modules below"
-            }
-            section() {
-                href(name: "href",
-					title: "AT&T Digital Life™",
-					required: false,
-					page: "prefATT",
-					description: "Enable integration with AT&T Digital Life™",
-					state: state.ihch.useATT ? "complete" : null)
-            }
-            section() {
-                href(name: "href",
-					title: "MyQ™",
-					required: false,
-					page: "prefMyQ",
-					description: "Enable integration with MyQ™",
-					state: state.ihch.useMyQ ? "complete" : null)
-            }
-            section() {
-                href(name: "href",
-					title: "IFTTT™",
-					required: false,
-					page: "prefIFTTT",
-					description: "Enable integration with IFTTT™",
-					state: state.ihch.useIFTTT ? "complete" : null)
-            }
-		}
+	    //prefill states for the modules
+    	doATTLogin(true, true)
+    	doMyQLogin(true, true)
+    	doIFTTTLogin(true, true)
+		return prefModules()
 	} else {
     	if (state.ihch.useLocalServer) {
-			return dynamicPage(name: "prefHCH",  title: "Error connecting to Home Cloud Hub local server") {
+			return dynamicPage(name: "prefModulesPrepare",  title: "Error connecting to Home Cloud Hub local server") {
 				section(){
-					paragraph "Sorry, your local server does not seem to respond at that IP."
+					paragraph "Sorry, your local server does not seem to respond at ${state.ihch.localServerIp}."
 				}
 	        }
         } else {
-			return dynamicPage(name: "prefHCH",  title: "Error connecting to Home Cloud Hub") {
+			return dynamicPage(name: "prefModulesPrepare",  title: "Error connecting to Home Cloud Hub") {
 				section(){
 					paragraph "Sorry, the credentials you provided for Home Cloud Hub are invalid. Please go back and try again."
 				}
 	        }
+        }
+    }
+}
+
+def prefModules() {
+    return dynamicPage(name: "prefModules", title: "Add modules to Home Cloud Hub", install: state.ihch.useATT || state.ihch.useMyQ || state.ihch.useIFTTT) {
+        section() {
+            paragraph "Select and configure any of the modules below"
+        }
+        section() {
+            href(name: "href",
+                 title: "AT&T Digital Life™",
+                 required: false,
+                 page: "prefATT",
+                 description: "Enable integration with AT&T Digital Life™",
+                 state: state.ihch.useATT ? "complete" : null)
+        }
+        section() {
+            href(name: "href",
+                 title: "MyQ™",
+                 required: false,
+                 page: "prefMyQ",
+                 description: "Enable integration with MyQ™",
+                 state: state.ihch.useMyQ ? "complete" : null)
+        }
+        section() {
+            href(name: "href",
+                 title: "IFTTT™",
+                 required: false,
+                 page: "prefIFTTT",
+                 description: "Enable integration with IFTTT™",
+                 state: state.ihch.useIFTTT ? "complete" : null)
         }
     }
     
@@ -278,23 +316,41 @@ def prefIFTTTConfirm() {
 /***********************************************************************/
 /* Login to Home Cloud Hub                                             */
 /***********************************************************************/
-private doHCHLogin() { 
-	return httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/login/' + settings.hchUsername.bytes.encodeBase64() + '/' + settings.hchPassword.bytes.encodeBase64()) { response ->
-		if (response.status == 200) {
-			if (response.data.result && (response.data.result == "success") && response.data.data && response.data.data.endpoint) {
-            	state.ihch.endpoint = response.data.data.endpoint
-				state.ihch.connected = now()
-                if (!state.ihch.security) {
-                	state.ihch.security = [:]
+private doHCHLogin() {
+	if (state.ihch.useLocalServer) {
+        atomicState.hchPong = false
+
+		log.trace "Pinging local server at " + state.ihch.localServerIp
+        sendLocalServerCommand state.ihch.localServerIp, "ping", ""
+
+		def cnt = 50
+        def hchPong = false
+        while (cnt--) {
+            pause(200)
+            hchPong = atomicState.hchPong
+            if (hchPong) {
+                return true
+            }
+        }
+        return false
+	} else {
+        return httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/login/' + settings.hchUsername.bytes.encodeBase64() + '/' + settings.hchPassword.bytes.encodeBase64()) { response ->
+            if (response.status == 200) {
+                if (response.data.result && (response.data.result == "success") && response.data.data && response.data.data.endpoint) {
+                    state.ihch.endpoint = response.data.data.endpoint
+                    state.ihch.connected = now()
+                    if (!state.ihch.security) {
+                        state.ihch.security = [:]
+                    }
+                    return true
+                } else {
+                    return false
                 }
-				return true
-			} else {
-				return false
-			}
-		} else {
-			return false
-		}
-	} 	
+            } else {
+                return false
+            }
+        }
+	}
 }
 
 /***********************************************************************/
@@ -399,12 +455,9 @@ def doMyQLogin(installing, force) {
     	log.info "Logging in to MyQ..."
         //perform the login, retrieve token
         def myQAppId = getMyQAppId()
-        log.debug myQAppId
         return httpGet("https://myqexternal.myqdevice.com/Membership/ValidateUserWithCulture?appId=${myQAppId}&securityToken=null&username=${settings.myqUsername}&password=${settings.myqPassword}&culture=en") { response ->
-		//check response, continue if 200 OK
-        log.debug response.status
-        	if (response.status == 200) {
-            log.debug response.data
+			//check response, continue if 200 OK
+       		if (response.status == 200) {
 				if (response.data && response.data.SecurityToken) {
                     hch.security[module_name].securityToken = response.data.SecurityToken
                     hch.security[module_name].connected = now()
@@ -468,7 +521,9 @@ def updated() {
 
 def uninstalled() {
 	//call home and bid them fairwell
-	httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/disconnect/' + state.hch.endpoint.bytes.encodeBase64())
+    if (!state.hch.useLocalServer) {
+		httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/disconnect/' + state.hch.endpoint.bytes.encodeBase64())
+    }
 }
 
 def initialize() {
@@ -479,10 +534,25 @@ def initialize() {
     //get the installing hch state
     state.hch = state.ihch
 
-	//call home and tell them where to find us
-    log.trace "Endpoint is at " + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}")
-	httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/connect/' + state.hch.endpoint.bytes.encodeBase64() + '/' + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}").bytes.encodeBase64())
-
+	//login to all services
+   	doATTLogin(false, false)
+   	doMyQLogin(false, false)
+	
+	if (state.hch.useLocalServer) {
+    	//initialize the local server
+		sendLocalServerCommand state.hch.localServerIp, "init", [
+        	server: [
+            	ip: location.hubs[0].localIP,
+                port: location.hubs[0].localSrvPortTCP
+            ],
+            modules: state.hch.security
+        ]
+    } else {
+		//call home and tell them where to find us
+    	log.info "Endpoint is at " + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}")
+		httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/connect/' + state.hch.endpoint.bytes.encodeBase64() + '/' + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}").bytes.encodeBase64())
+	}
+    
 	state.hch.usesATT = !!(settings.attUsername || settings.attPassword)
 	state.hch.usesIFTTT = !!settings.iftttKey
     
@@ -492,14 +562,21 @@ def initialize() {
         
         /* subscribe to mode changes to allow sync with AT&T Digital Life */
         subscribe(location, modeChangeHandler)
+        if (state.hch.useLocalServer) {
+        	//listen to LAN incoming messages
+        	subscribe(location, null, lanEventHandler, [filterEvents:false])
+        }
    }
 }
 
 
+private Integer convertHexToInt(hex) {
+	Integer.parseInt(hex,16)
+}
 
-
-
-
+private String convertHexToIP(hex) {
+	[convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
+}
 
 
 
@@ -570,6 +647,66 @@ def modeChangeHandler(event) {
 	}
 }
 
+private searchForLocalServer() {
+    if(!state.ihch.subscribed) {
+		subscribe(location, null, lanEventHandler, [filterEvents:false])
+		state.ihch.subscribed = true
+    }       
+	log.trace "Looking for local HCH server..."
+	sendHubCommand(new physicalgraph.device.HubAction("lan discovery " + getLocalServerURN(), physicalgraph.device.Protocol.LAN))
+}
+
+def lanEventHandler(evt) {
+    def description = evt.description
+    def hub = evt?.hubId
+
+	def parsedEvent = parseLanMessage(description)
+
+	//discovery
+	if (parsedEvent.ssdpTerm && parsedEvent.ssdpTerm.contains(getLocalServerURN())) {
+        atomicState.hchLocalServerIp = convertHexToIP(parsedEvent.networkAddress)
+	}
+    
+    //ping response
+    if (parsedEvent.data && parsedEvent.data.service && (parsedEvent.data.service == "hch")) {
+	    def msg = parsedEvent.data
+        if (msg.result == "pong") {
+        	//log in successful to local server
+            log.info "Successfully contacted local server"
+			atomicState.hchPong = true
+        }   	
+    }
+    if (parsedEvent.data && parsedEvent.data.event) {
+        switch (parsedEvent.data.event) {
+        	case "init":
+                sendLocalServerCommand state.hch.localServerIp, "init", [
+                            server: [
+                                ip: location.hubs[0].localIP,
+                                port: location.hubs[0].localSrvPortTCP
+                            ],
+                            modules: processSecurity(parsedEvent.data.data)
+                        ]
+				break
+        	case "event":
+            	processEvent(parsedEvent.data.data);
+                break
+        }
+    }
+    
+}
+
+private sendLocalServerCommand(ip, command, payload) {
+    sendHubCommand(new physicalgraph.device.HubAction(
+        method: "GET",
+        path: "/${command}",
+        headers: [
+            HOST: "${ip}:42457"
+        ],
+        query: payload ? [payload: groovy.json.JsonOutput.toJson(payload).bytes.encodeBase64()] : []
+    ))
+}
+
+
 
 
 
@@ -587,6 +724,7 @@ def modeChangeHandler(event) {
 mappings {
     path("/event") {
         action: [
+            GET: "processEvent",
             PUT: "processEvent"
         ]
     }
@@ -611,18 +749,18 @@ mappings {
 /***********************************************************************/
 /*                      EXTERNAL EVENT HANDLERS                        */
 /***********************************************************************/
-private processEvent() {
-    // get the inputs from the URL
-    //unsubscribe()
-    //subscribe(location, modeChangeHandler)
+private processEvent(data) {
+	if (!data) {
+    	data = params
+    }
 
-    def eventName = params?.event
-    def eventValue = params?.value
-    def deviceId = params?.id
-    def deviceModule = params?.module
-    def deviceName = params?.name.capitalize()
-    def deviceType = params?.type
-    def description = params?.description
+    def eventName = data?.event
+    def eventValue = data?.value
+    def deviceId = data?.id
+    def deviceModule = data?.module
+    def deviceName = data?.name.capitalize()
+    def deviceType = data?.type
+    def description = data?.description
     if (description) {
     	log.info 'Received event: ' + description
     } else {
@@ -657,7 +795,7 @@ private processEvent() {
     }
     if (device) {
     	// we have a valid device that existed or was just created, now set the state
-        for(param in params) {
+        for(param in data) {
             def key = param.key
         	def value = param.value
         	if ((key.size() > 5) && (key.substring(0, 5) == 'data-')) {
@@ -724,8 +862,12 @@ private processEvent() {
     }
 }
 
-private processSecurity() {
-    def module = params?.module
+private processSecurity(data) {
+	if (!data) {
+    	data = params
+    }
+	
+	def module = data?.module
     if (module) {
 		log.info "Received request for security tokens for module ${module}"
     } else {
