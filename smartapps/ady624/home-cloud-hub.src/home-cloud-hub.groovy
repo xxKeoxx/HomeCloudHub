@@ -527,17 +527,6 @@ def uninstalled() {
 }
 
 def initialize() {
-	if (!state.hch.useLocalServer) {
-		if (!state.accessToken) {
-	    	//make sure OAuth is enabled in the SmartApp Settings if the next line gives you an error
-            try {
-	        	createAccessToken()
-            } catch(e) {
-            	log.error "Could not create Access Token for app. Please go to App Settings and enable/create OAuth Client/Secret pair."
-            }
-		}
-	}
-    
     state.installed = true    
     //get the installing hch state
     state.hch = state.ihch
@@ -553,6 +542,16 @@ def initialize() {
             modules: state.hch.security
         ]
     } else {
+    	//in cloud mode, we need an access token for the endpoint
+		if (!state.accessToken) {
+	    	//make sure OAuth is enabled in the SmartApp Settings if the next line gives you an error
+            try {
+	        	createAccessToken()
+            } catch(e) {
+            	log.error "Could not create Access Token for app. Please go to App Settings and enable/create OAuth Client/Secret pair."
+            }
+		}
+
 		//call home and tell them where to find us
     	log.info "Endpoint is at " + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}")
 		httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/connect/' + state.hch.endpoint.bytes.encodeBase64() + '/' + apiServerUrl("/api/token/${state.accessToken}/smartapps/installations/${app.id}").bytes.encodeBase64())
