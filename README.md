@@ -20,6 +20,8 @@ Click on the Update from Repo button and select the HomeCloudHub repo. Select th
 
 # Installing the HomeCloudHub NodeJS server
 
+Install NodeJS. You can follow these [instructions](https://nodejs.org/en/download/package-manager/) to install Node JS 4.x or 5.x. I have developed and tested this using NodeJs v5.7.1.
+
 On your linux machine, create a folder /var/node (if it doesn't exist yet). Download the homecloudhub.local folder onto your linux machine. I use this on a Raspberry Pi running Raspbian. Install necessary modules:
 
     sudo npm install -g request
