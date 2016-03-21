@@ -521,7 +521,7 @@ def updated() {
 
 def uninstalled() {
 	//call home and bid them fairwell
-    if (!state.hch.useLocalServer) {
+    if (state.hch && !state.hch.useLocalServer) {
 		httpGet('https://www.homecloudhub.com/endpoint/02666328-0063-0086-0069-076278844647/manager/smartthingsapp/disconnect/' + state.hch.endpoint.bytes.encodeBase64())
     }
 }
