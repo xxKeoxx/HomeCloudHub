@@ -530,7 +530,11 @@ def initialize() {
 	if (!state.hch.useLocalServer) {
 		if (!state.accessToken) {
 	    	//make sure OAuth is enabled in the SmartApp Settings if the next line gives you an error
-	        createAccessToken()         
+            try {
+	        	createAccessToken()
+            } catch(e) {
+            	log.error "Could not create Access Token for app. Please go to App Settings and enable/create OAuth Client/Secret pair."
+            }
 		}
 	}
     
