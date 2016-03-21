@@ -16,7 +16,7 @@ If you're having any issues, feel free to open issues and PRs here.
 
 Go to your SmartThings [IDE](https://graph.api.smartthings.com/login/auth) and go to your [SmartApps](https://graph.api.smartthings.com/ide/apps). Click on Settings and add a new repository with owner **ady624**, name **HomeCloudHub** and branch **master**. Click Ok.
 
-Click on the Update from Repo button and select the HomeCloudHub repo. Select the HomeCloudHub application and install it. Do the same for the Device Handlers, selecting whichever devices you plan on using. If your device is not in the list, let me know so I can add it.
+Click on the Update from Repo button and select the HomeCloudHub repo. Select the HomeCloudHub application and install it. Do the same for the Device Handlers, selecting whichever devices you plan on using. If your device is not on the list, let me know so I can add it.
 
 # Installing the HomeCloudHub NodeJS server
 
