@@ -527,8 +527,11 @@ def uninstalled() {
 }
 
 def initialize() {
-	if (!state.accessToken) {
-        createAccessToken()         
+	if (!state.hch.useLocalServer) {
+		if (!state.accessToken) {
+	    	//make sure OAuth is enabled in the SmartApp Settings if the next line gives you an error
+	        createAccessToken()         
+		}
 	}
     
     state.installed = true    
