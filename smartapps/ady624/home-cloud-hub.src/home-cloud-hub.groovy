@@ -3,6 +3,15 @@
  *
  *  Copyright 2016 Adrian Caramaliu
  *
+ *  NOTE: This application requires a local server connected to the same network as your SmartThings hub.
+ *        Find more info at https://github.com/ady624/HomeCloudHub
+ *
+ *  Many thanks to users Keo (https://community.smartthings.com/users/Keo) and swanny (https://community.smartthings.com/users/swanny)
+ *  for providing both the drive (https://community.smartthings.com/t/integration-with-at-t-digital-life/4082) and the basic code example
+ *  to get me started with SmartApps. Although most of Keo's original code is no longer in this application, it saved me time
+ *  figuring out how to move around with the SmartApp, this being my first SmartApp to date. I actually bought the SmartThings hub
+ *  for this integration alone (and ended up using it for other things too).
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -12,7 +21,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- */
+**/
+
 definition(
     name: "Home Cloud Hub",
     namespace: "ady624",
@@ -804,7 +814,8 @@ private processEvent(data) {
         		device.sendEvent(name: 'module', value: deviceModule);
         		device.sendEvent(name: 'type', value: deviceType);
             } catch(e) {
-            	log.info 'Home Cloud Hub discovered a device that is not yet supported by your hub. Please find and install the [' + deviceHandler + '] device handler from https://github.com/ady624/SmartThingsPublic/tree/master/devicetypes/ady624'
+            	log.info "Home Cloud Hub discovered a device that is not yet supported by your hub. Please find and install the [${deviceHandler}] device handler from https://github.com/ady624/HomeCloudHub/tree/master/devicetypes/ady624"
+            	log.info "If the repository is missing the [${deviceHandler}] device handler, please provide the device data to the author of this software so he can add it. Thank you. Device data is [${data}]"
             }
         }
     }
