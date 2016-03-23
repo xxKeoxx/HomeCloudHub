@@ -21,6 +21,13 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
+ *  Version history
+ *
+ *
+ *  v0.1.03.23.16 - Updated location sync method
+ *  v0.1.03.22.16 - Initial beta release
+ *
 **/
 
 definition(
@@ -673,9 +680,8 @@ private searchForLocalServer() {
 def lanEventHandler(evt) {
     def description = evt.description
     def hub = evt?.hubId
-
 	def parsedEvent = parseLanMessage(description)
-
+	
 	//discovery
 	if (parsedEvent.ssdpTerm && parsedEvent.ssdpTerm.contains(getLocalServerURN())) {
         atomicState.hchLocalServerIp = convertHexToIP(parsedEvent.networkAddress)
@@ -857,12 +863,15 @@ private processEvent(data) {
                                     break                        
                             }
                             if (mode) {
-                                //sync location mode
-                                if ((mode != location.mode) || (mode != device.currentValue('mode'))) {
-                                    log.info 'Switching mode from ' + location.mode + ' to ' + mode
+                            	//set device mode
+                                if (mode != device.currentValue('mode')) {
+                                    log.info 'Switching Digital Life mode from ' + device.currentValue('mode') + ' to ' + mode
 	                                device.sendEvent(name: 'mode', value: mode);
-                                    //device has "Location Mode" as capability - we don't need to set the location mode
-                                    //location.setMode(mode);
+                                }
+                                //sync location mode
+                                if (mode != location.mode) {
+                                    log.info 'Switching location mode from ' + location.mode + ' to ' + mode
+                                    location.setMode(mode);
                                 }
                             }
                             //sync SmartThings Home Monitor
