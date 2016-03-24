@@ -12,12 +12,22 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *
+ *  Version history
+ *
+ *
+ *  v0.1.03.24.16 - Published device as switch to allow easy manipulation via rules - on() sets it to away
+ *                  and off() sets it to home. Also published commands setMode(mode), home(), away(), stay()
+ *  v0.1.03.22.16 - Initial beta release
+ *
  */
 metadata {
 	definition (name: "AT&T Digital Life System", namespace: "ady624", author: "Adrian Caramaliu", oauth: true) {
 		capability "Actuator"
 		capability "Location Mode"
         capability "Refresh"
+        capability "Configuration"
+        capability "Switch"
         attribute "id", "string"
         attribute "module", "string"       
         attribute "type", "string"
@@ -37,6 +47,7 @@ metadata {
         command "home"
         command "stay"
         command "away"
+        command "setMode"
 	}
 
     simulator {
@@ -103,11 +114,20 @@ def parse(String description) {
 }
 
 def configure(mode) {
+	setMode(mode)
+}
+
+def setMode(mode) {
 	switch (mode.toLowerCase()) {
     	case 'home':
+    	case 'disarm':
+    	case 'disarmed':
+    	case 'off':
         	home();
             break;
     	case 'stay':
+    	case 'instant':
+    	case 'night':
         	stay();
             break;
     	case 'away':
@@ -116,14 +136,22 @@ def configure(mode) {
     }
 }
 
+def on() {
+	away()
+}
+
+def off() {
+	home()
+}
+
 def home() {
-	log.trace parent.proxyCommand(device, 'mode', 'Home');
+	parent.proxyCommand(device, 'mode', 'Home');
 }
 
 def stay() {
-	log.trace parent.proxyCommand(device, 'mode', 'Stay');
+	parent.proxyCommand(device, 'mode', 'Stay');
 }
 
 def away() {
-	log.trace parent.proxyCommand(device, 'mode', 'Away');
+	parent.proxyCommand(device, 'mode', 'Away');
 }
