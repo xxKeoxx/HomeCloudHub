@@ -17,7 +17,9 @@
  *
  *
  *  v0.1.03.24.16 - Published device as switch to allow easy manipulation via rules - on() sets it to away
- *                  and off() sets it to home. Also published commands setMode(mode), home(), away(), stay()
+ *                  and off() sets it to home. Also published commands setMode(mode), home(), away(), stay().
+ *					You can now also use it as a "Switch Level" by setting the level to 0 for home, 1 for stay
+ *                  and 2 or more for away.
  *  v0.1.03.22.16 - Initial beta release
  *
  */
@@ -28,6 +30,7 @@ metadata {
         capability "Refresh"
         capability "Configuration"
         capability "Switch"
+        capability "Switch Level"
         attribute "id", "string"
         attribute "module", "string"       
         attribute "type", "string"
@@ -115,6 +118,20 @@ def parse(String description) {
 
 def configure(mode) {
 	setMode(mode)
+}
+
+def setLevel(level) {
+	switch (level) {
+    	case 0:
+        	home();
+            break;
+    	case 1:
+        	stay();
+            break;
+    	default:
+        	away();
+            break;
+    }
 }
 
 def setMode(mode) {
