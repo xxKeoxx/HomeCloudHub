@@ -25,6 +25,7 @@
  *  Version history
  *
  *
+ *  v0.1.04.28.16 - Added Follow Location Mode option for AT&T
  *  v0.1.03.23.16 - Updated location sync method
  *  v0.1.03.22.16 - Initial beta release
  *
@@ -224,6 +225,7 @@ def prefATT() {
             }
             section("Permissions") {
 				input("attControllable", "bool", title: "Control AT&T Digital Life", required: true, defaultValue: true)
+				input("attFollowMode", "bool", title: "Follow Location Mode", required: true, defaultValue: true)
             }
     	}
 	} else {
@@ -386,6 +388,7 @@ private doATTLogin(installing, force) {
     hch.security[module_name] = [
     	'enabled': !!(settings.attUsername || settings.attPassword),
         'controllable': settings.attControllable,
+        'followMode': settings.attFollowMode,
         'connected': false
     ]
     //check if the AT&T Digital Life module is enabled
@@ -577,7 +580,7 @@ def initialize() {
 	state.hch.usesATT = !!(settings.attUsername || settings.attPassword)
 	state.hch.usesIFTTT = !!settings.iftttKey
     
-    if (state.hch.usesATT && settings.attControllable) {
+    if (state.hch.usesATT && settings.attControllable && settings.attFollowMode) {
     	/* subscribe to SmartThings Home Monitor to allow sync with AT&T Digital Life status */
 		//subscribe(location, "alarmSystemStatus", shmHandler)
         
@@ -638,6 +641,10 @@ def shmHandler(evt) {
 }
 
 def modeChangeHandler(event) {
+	//abort if not controllable or not following mode
+	if ((!settings.attControllable) || (!settings.attFollowMode)) {
+    	return
+    }
     if (event.name == 'mode') {
         log.info "Received notification of SmartThings Mode having changed to ${event.value}"
         def mode = null;
