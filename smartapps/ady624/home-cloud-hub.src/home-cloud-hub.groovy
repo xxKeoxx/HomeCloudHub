@@ -25,6 +25,7 @@
  *  Version history
  *
  *
+ *  v0.1.04.05.16 - updated If statement to prevent SmartThings mode change from AT&T DL if Follow Location Mode is disabled
  *  v0.1.04.28.16 - Added Follow Location Mode option for AT&T
  *  v0.1.03.23.16 - Updated location sync method
  *  v0.1.03.22.16 - Initial beta release
@@ -869,7 +870,7 @@ private processEvent(data) {
                                     shmState = 'stay'
                                     break                        
                             }
-                            if (mode) {
+                            if ((mode) && (settings.attFollowMode)) {
                             	//set device mode
                                 if (mode != device.currentValue('mode')) {
                                     log.info 'Switching Digital Life mode from ' + device.currentValue('mode') + ' to ' + mode
